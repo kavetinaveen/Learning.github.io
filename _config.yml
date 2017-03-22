@@ -1,2 +1,7 @@
 theme: jekyll-theme-slate
-title: Learning Resources
+
+# Name of your blog (this will show up at the top of your page and in the RSS feed)
+name: Learning Resources
+
+# Short description (goes below the title; it will also be used in the RSS feed)
+description: Keep a view for new learning resources every week.
