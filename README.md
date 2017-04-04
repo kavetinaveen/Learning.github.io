@@ -2,7 +2,9 @@
 
 ## Machine Learning Basics:
 
-1. [Basics of Linear Regression](http://nbviewer.jupyter.org/github/kavetinaveen/Learning.github.io/blob/master/Basics%20of%20Linear%20Regression.ipynb)
+1. [Digging into Linear Regression - Part I](http://nbviewer.jupyter.org/github/kavetinaveen/Learning.github.io/blob/master/Digging%20into%20Linear%20Regression%20-%20I.ipynb)
+
+2. [Digging into Linear Regression - Part II](http://nbviewer.jupyter.org/github/kavetinaveen/Learning.github.io/blob/master/Digging%20into%20Linear%20Regression%20-%20II.ipynb)
 
 ## Engineering/Coding Ground:
 
