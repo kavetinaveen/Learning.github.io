@@ -1,0 +1,378 @@
+---
+title: "Optimization - Starters"
+author: 'Naveen Kaveti'
+date: "5/14/2017"
+output: html_document
+runtime: shiny
+---
+
+<style type="text/css">
+
+body, td {
+   font-size: 14px;
+   font-family: "Roboto",serif;
+}
+code.r{
+  font-size: 12px;
+}
+pre {
+  font-size: 12px
+}
+</style>
+
+
+```{r setup, include=FALSE}
+knitr::opts_chunk$set(echo = TRUE)
+```
+
+
+In this section I will take you through below definitions, which we use more frequently in Optimization. 
+
+1. Univariate
+  + Gradients
+  + Convex and Concave functions
+
+2. Bivariate
+  + Partial gradient and Hessian
+  + Positive definite matrix
+
+---
+
+### 1. Gradients:
+
+Let, `y = f(x)` be a univariate function, gradient of y with respect to x computes the relative change in y with respect to x. The same canbe denoted as $\frac{dy}{dx}$.
+
+There are two ways to compute the gradients:
+
+1. Numerical Gradient
+2. Analytical Gradient
+
+**Numerical Gradient:**
+
+Gradient of $f\left(x\right)$ at $x_0$ can be computed numerically as follows:
+
+$$\left[\frac{df\left(x\right)}{dx}\right]_{x = x_0} = \frac{f\left(x_0 + h\right) - f\left(x_0\right)}{h}$$
+
+Where `h` is a value close to zero.
+
+**Analytical Gradient**
+
+Gradient of $f\left(x\right)$ at $x_0$ can be computed analytically as follows:
+
+$$\left[\frac{df\left(x\right)}{dx}\right]_{x = x_0} = \lim_{h \to\ 0} \frac{f\left(x_0 + h\right) - f\left(x_0\right)}{h}$$
+```{r echo = FALSE, comment = NA, include = FALSE}
+library(plotly)
+library(shiny)
+```
+
+
+```{r comment = NA}
+min <- -100
+max <- 100
+Step <- 0.25
+x <- seq(min, max, Step)
+f <- function(x){return(x^2)}
+
+numerical_gradient <- function(f, x, h){
+  return((f(x+h) - f(x))/h)
+}
+
+analytical_gradient <- function(x){
+  return(2*x)
+}
+
+renderPlotly({
+  h <- input$sel_h
+  grad <- numerical_gradient(f, input$sel_x, h)
+  ana_grad <- analytical_gradient(input$sel_x)
+  p <- plot_ly(x = x, y = f(x), type = "scatter", mode = "lines", name = "x^2") %>% add_trace(y = -f(input$sel_x) + grad * x, name = "Numerical Gradient") %>% add_trace(y = -f(input$sel_x) + ana_grad * x, name = "Analytical Gradient")
+  p
+})
+
+```
+
+```{r comment = NA, echo = FALSE}
+sliderInput("sel_x", "Select x value", min = min, max = max, value = (min + max)/2)
+sliderInput('sel_h', "Select h value", min = 1e-05, max = 1, value = 0.25, step = 0.01)
+```
+
+
+There is a slight difference between numerical and analytical gradients. This diffreence is due to $\lim_{h \to\ 0}$ in the definition of Analytical gradient. i.e., We can minimize this difference by taking very small value for `h` in numerical gradient.
+
+Taking very small value (<1e-05) for `h` in  numericla gradient may leads to numerical instability. So in practice centered difference formula works better than the aforementioned definition ([cs231n/optimization](http://cs231n.github.io/optimization-1/))
+
+**Centered Differece Formula:** 
+
+Gradient of $f\left(x\right)$ at $x_0$ can be computed numerically as follows:
+
+$$\left[\frac{df\left(x\right)}{dx}\right]_{x = x_0} = \frac{f\left(x_0 + h\right) - f\left(x_0 - h\right)}{2h}$$
+
+**What is the major advantage of gradient?**
+
+Sign of the gradient at a point describes whether the function is increasing or decreasing around that point and the magnitude of the gradient describes the rate at which function changes. In otherwords, gradient gives you the slope of the tangent line at that point.
+
+**Critial or Stable Points:** Set of all x's for which the gradient is 0.
+
+In the above example there exist an unique stable point (x = 0) and that it self is a local and global minima too. Is this is the generalized case?
+
+Let's consider $f\left(x \right) = x^3$, gradient of `f` at $x = 0$ is 0 but $f\left(x \right)$ is neither local minima nor local maxima. In such case we cannot colclude anything.
+
+```{r echo = TRUE, comment = NA}
+f2 <- function(x){x^3}
+df2bydx <- function(x){3*x^2}
+ddf2byddx <- function(x){6*x}
+
+x0 <- 0
+p <- plot_ly(x = x, y = f2(x), type = "scatter", mode = "lines", name = "x^3") %>% add_trace(y = -f2(x0) + df2bydx(x0) * x, type = "scatter", mode = "lines", name = "Gradient at 0")
+p
+```
+
+Critical point in the above example is also called as `inflection point`.
+
+**Key Point:** $f^{'}\left(x\right) = 0$ is not sufficient for the local optimality. We need to check $f^{''}\left(x\right)$ for deciding whether a point is local minima ($f^{''}\left(x\right) > 0$) or maxima ($f^{''}\left(x\right) < 0$)
+
+Where, $f^{'}\left(x\right) = \frac{df\left(x\right)}{dx}$ and $f^{''}\left(x\right) = \frac{d^2f\left(x\right)}{d^2x}$
+
+<br />
+---
+
+### 2. Convex and Concave functions:
+
+**Convex function:** A function is said to be convex if every line segment joining between two points on its graph is never below the function.
+
+Mathematically the same can be written as follows:
+
+$$f\left(\lambda x_1 + (1-\lambda)x_2 \right) \geq \lambda f\left(x_1 \right) + \left(1- \lambda \right)f\left(x_2\right) \forall 0 \leq \lambda \leq 1$$
+
+**Concave function:** A function is said to be concave if every line segment joining between two points on its graph is never above the function.
+
+Mathematically the same can be written as follows:
+
+$$f\left(\lambda x_1 + (1-\lambda)x_2 \right) \leq \lambda f\left(x_1 \right) + \left(1- \lambda \right)f\left(x_2\right) \forall 0 \leq \lambda \leq 1$$
+
+```{r comment = NA}
+p1 <- plot_ly(x = x, y = x^2, type = "scatter", mode = "lines", name = "Convex Function")
+p2 <- plot_ly(x = x, y = -x^2, type = "scatter", mode = "lines", name = "Concave Function")
+p3 <- plot_ly(x = x, y = x^3, type = "scatter", mode = "lines", name = "Neither convex nor concave")
+subplot(p1, p2, p3, nrows = 1)
+```
+
+**Condition to check convexity/concavity:**
+
+If $f^{''}\left(x\right) \geq 0 \ \ \forall \ x \in X$ then `f` is convex. If $f^{''}\left(x\right) \leq 0 \ \ \forall \ x \in X$ then `f` is concave. 
+
+
+**Key Point:** If `f` be a convex/concave function then there exist an unique local minima/maxima and that itself is a global minima/maxima.
+
+**Summary:** 
+
+* $\{x : f^{'}\left(x\right) = 0 \}$ are called as critical or stable points
+* A point $x^o$ is a local maximum if $x^o$ is a critical point and $f^{''}\left(x^o \right) > 0$
+* A point $x^o$ is a local minimum if $x^o$ is a critical point and $f^{''}\left(x^o \right) < 0$
+* Can't say anything about $x^o$ if $x^o$ a critical point and $f^{''}\left(x^o \right) = 0$
+* A function `f` is said to be convex if $f^{''}\left(x\right) \geq 0 \ \ \forall \ x \in X$
+* A function `f` is said to be concave if $f^{''}\left(x\right) \leq 0 \ \ \forall \ x \in X$
+* A local minima is a global minima if `f` is convex
+* A local maxima is a global maxima if `f` is concave
+
+---
+
+### 3. Partial Gradient and Hessian
+
+**Partial Gradient**
+
+Partial gradient is analogous to gradient in univariate case. Suppose `f(x, y)` is a bivariate function then $\frac{\delta f}{\delta x}$ is the partial gradient of `f` w.r.t `x` and $\frac{\delta f}{\delta y}$ is the partial gradient of `f` w.r.t `y`.
+
+Assume $g\left(x, y_0\right)$ represent the trace of `f(x, y)` `y` held fixed ($y = y_0$) then $\frac{\delta f}{\delta x}$ is equals to $\frac{dg\left(x\right)}{dx}$.
+
+None of these two partial gradients explains completely about `f` that's why these are called as partial gradients.
+
+**Analytical Partial Gradient**
+
+Partial gradient of $f\left(x, y\right)$ at $\left(x_0, y_0\right)$ canbe computed analytically as follows:
+
+$$\left[\frac{\delta f\left(x, y\right)}{\delta x}\right]_{x = x_0; y = y_0} = \frac{f\left(x_0 + h, y_0\right) - f\left(x_0-h, y_0\right)}{2h}$$
+
+Numerical partial gradient is very similar to numerical gradient, we need to assume `y` as constant when your computing partial gradient w.r.t `x`.
+
+**Example:** Let, $f\left(x, y \right) = 2x^2 + 12xy+20y^2$ be a bivariate function.
+
+```{r echo = TRUE, comment = NA}
+# Plotting f(x, y)
+x_par <- seq(-10, 10, by = 0.05)
+y_par <- seq(-10, 10, by = 0.05)
+f_bivariate <- function(x, y){2*x^2 + 12*x*y + 20*y^2}
+z <- matrix(NA, nrow = length(x_par), ncol = length(y_par))
+
+for(i in 1:length(x_par)){
+  for(j in 1:length(y_par)){
+    z[i, j] = f_bivariate(x_par[i], y_par[j])
+  }
+}
+
+z <- t(z)
+
+# Fixing one dimension and finding gradient for univariate case
+g_univariate <- function(x){2*x^2}
+dgbydx <- function(x){4*x}
+
+
+renderPlotly({
+  x0 <- input$sel_x_par
+  y0 <- input$sel_y_par
+  grad_x0 <- dgbydx(x0)
+  
+  partial_p1 <- plot_ly(x = x_par, y = y_par, z = ~z, type = "surface", colors = colorRamp(c("green", "red")), name = "f") 
+  
+  if(input$fix_y){
+    partial_p1 <- partial_p1 %>% add_trace(x = x_par, y = y0, z = 2*x_par^2, mode = "markers", type = "scatter3d", marker = list(size = 3, color = "blue", symbol = 104), name = "g") %>% add_trace(x = x_par, y = input$sel_y_par, z = -g_univariate(x0) + grad_x0 * x_par, type = "scatter3d", mode = "markers", marker = list(size = 3, color = "red", symbol = 103))
+  }
+  
+  partial_p1
+})
+```
+
+```{r echo = FALSE, comment = NA}
+checkboxInput('fix_y', 'Region of x for a fixed y', value = FALSE)
+# checkboxInput('tangent_plane', 'Show Tangent Plane', value = FALSE)
+```
+
+```{r echo = FALSE, comment = NA}
+sliderInput("sel_x_par", "Select x value", min = min(x_par), max = max(x_par), value = (min(x_par) + max(x_par))/2)
+sliderInput("sel_y_par", "Select y value", min = min(y_par), max = max(y_par), value = (min(y_par) + max(y_par))/2)
+```
+
+
+Blue color surface in the above plot is a function of `x` keeping `y` constant (Say, $g\left(x\right)$). Red color surface is the tangent line of $g\left(x\right)$ at $x = x_0$ (input provided from the slider bar).
+
+In the above the tangent plane (analogous to tangent line in univariate case) at x = 0 and y = 0 is parallel to xy-plane. Such points are called as **critical points**. Does this provide any conclusion about (0, 0) point?
+
+```{r echo = TRUE, comment = NA}
+partial_grad_x <- function(x0, y0){4*x0 + 12*y0}
+partial_grad_y <- function(x0, y0){12*x0 + 40*y0}
+
+x0 <- 0
+y0 <- 0
+
+tangent_plane <- function(i, j){f_bivariate(x0, y0) + (i - x0) * partial_grad_x(x0, y0) + (j - y0) * partial_grad_y(x0, y0)}
+
+z_tangent <- matrix(NA, nrow = length(x_par), ncol = length(y_par))
+for(i in 1:nrow(z_tangent)){
+  for(j in 1:ncol(z_tangent)){
+    z_tangent[i, j] <- tangent_plane(x_par[i], y_par[j])
+  }
+}
+
+partial_p2 <- plot_ly(x = x_par, y = y_par, z = ~z, type = "surface", colors = colorRamp(c("green", "red")), name = "f") %>% add_trace(x = x_par, y = y_par, z = ~z_tangent, type = "surface")
+
+partial_p2
+```
+
+**Second Partial Derivatives:**
+
+Partial gradient describes the behavior of `f(x, y)` either in the direction of `x` or `y`. We cannot conclude anything by looking at the behavior of the function in only direction. For example consider, $f\left(x, y\right) = x^2 - y^2$
+
+```{r echo = TRUE, comment = NA}
+f_bivariate2 <- function(x, y){x^2 - y^2}
+partial_grad_x2 <- function(x0, y0){2*x0}
+partial_grad_y2 <- function(x0, y0){2*y0}
+
+z2 <- matrix(NA, nrow = length(x_par), ncol = length(y_par))
+
+for(i in 1:length(x_par)){
+  for(j in 1:length(y_par)){
+    z2[i, j] = f_bivariate2(x_par[i], y_par[j])
+  }
+}
+
+z2 <- t(z2)
+
+x0 <- 0
+y0 <- 0
+
+tangent_plane2 <- function(i, j){f_bivariate2(x0, y0) + (i - x0) * partial_grad_x2(x0, y0) + (j - y0) * partial_grad_y2(x0, y0)}
+
+z_tangent2 <- matrix(NA, nrow = length(x_par), ncol = length(y_par))
+for(i in 1:nrow(z_tangent2)){
+  for(j in 1:ncol(z_tangent2)){
+    z_tangent2[i, j] <- tangent_plane2(x_par[i], y_par[j])
+  }
+}
+
+z_tangent2 <- t(z_tangent2)
+
+renderPlotly({
+  if(input$tangent_plane){
+    partial_p3 <- plot_ly(x = x_par, y = y_par, z = ~z2, type = "surface", colors = colorRamp(c("green", "red")), name = "f") %>% add_trace(x = x_par, y = y_par, z = ~z_tangent2, type = "surface", name = "tangent plane")
+  }else{
+    partial_p3 <- plot_ly(x = x_par, y = y_par, z = ~z2, type = "surface", colors = colorRamp(c("green", "red")), name = "f")
+  }
+  partial_p3
+})
+
+```
+
+```{r echo = FALSE, comment = NA}
+checkboxInput("tangent_plane", "Show Tangent Plane", value = FALSE)
+```
+
+In the above example tangent plane at (0, 0) is parallel to xy-axis but the point (0, 0) is not a local optimal. A slight change in the `x` value at 0 increase output significantly and sight change in the `y` value at 0 decreases output significantly. i.e., x-y directions are contradicting each other. Such points are called as `saddle points`. Hence, we need second order partial derivatives to conclude about the point.
+
+In univariate case we had only one double gradient but in bivariate case we will have 4 partial double gradients. In general, for n-variate case we will have $n^2$ partial double gradients.
+
+**Hessian Matrix:**
+
+Hessian matrix is a matrix of second order parital gradients.
+
+$$H = \begin{bmatrix}
+    \frac{ \delta f}{ \delta x^2}       & \frac{ \delta f}{ \delta x \delta y} \\
+    \frac{ \delta f}{ \delta y \delta x}       & \frac{\delta f}{ \delta y^2}
+\end{bmatrix}$$
+
+**Note:** In the above matrix $\frac{ \delta f}{ \delta x \delta y} = \frac{ \delta f}{ \delta y \delta x}$. Hence, `H` is a symmetric matrix.
+
+**Condition to check convexity/concavity:** 
+
+Let $H_{x_0y_0}$ be the hessian matrix at point $\left(x_0, y_0\right)$ and $\left(x_0, y_0\right)$ be a critical point then,
+
+* $\left(x_0, y_0\right)$ is said to be local minimum if all eigen values of $H_{x_0y_0}$ are positive
+* $\left(x_0, y_0\right)$ is said to be local maximum if all eigen values of $H_{x_0y_0}$ are negative
+* $\left(x_0, y_0\right)$ is said to be saddle point if eigen values of $H_{x_0y_0}$ are mix (positive & negative)
+* Can't say anything about $\left(x_0, y_0\right)$ if one of the eigen value of $H_{x_0y_0}$ is zero
+
+**Examples:**
+
+1. Hessian matrix of $f\left(x, y \right) = 2x^2 + 12xy+20y^2$ at $(0, 0)$ is,
+
+$$H = \begin{bmatrix}
+    4       & 12 \\
+    12       & 40
+\end{bmatrix}$$
+
+Eigen values of the above matrix are $22 + 6 \sqrt13$, $22 - 6 \sqrt13$ and $(0, 0)$ is a critical point. Hence, $(0, 0)$ is a local minimum.
+
+2. Hessian matrix of $g\left(x, y\right) = x^2 - y^2$ is, 
+
+$$H = \begin{bmatrix}
+    2       & 0 \\
+    0       & -2
+\end{bmatrix}$$
+
+Eigen values of the above matrix are 2, -2 and $(0, 0)$ is a critical point. Hence, $(0, 0)$ is a saddle point.
+
+**Positive Definite Matrix:** 
+
+A matrix `A` is said to be positive definite matrix if $x^t A x \geq 0 \ \forall \ x\in R^n-0^n$
+
+
+**Refrences:**
+
+1. [cs231n course by Andrej Karpathy](http://cs231n.github.io/)
+2. [Khan Academy](https://www.khanacademy.org)
+3. [Sebastian Ruder's Blog](http://sebastianruder.com/optimizing-gradient-descent/index.html)
+4. [Eigen Value](http://setosa.io/ev/eigenvectors-and-eigenvalues/)
+
+
+<br />
+
+
